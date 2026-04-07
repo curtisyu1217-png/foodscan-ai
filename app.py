@@ -1,206 +1,128 @@
 import streamlit as st
-import json
 from google.cloud import vision
 from google.oauth2 import service_account
+import pandas as pd
 
-# ---------- GOOGLE VISION SETUP ----------
-if "GOOGLE_VISION_KEY" not in st.secrets:
-    st.error("Google Vision key not found. Please add GOOGLE_VISION_KEY in Streamlit Secrets.")
+# -----------------------------
+# PAGE CONFIG
+# -----------------------------
+st.set_page_config(page_title="FoodScan AI", page_icon="🍱")
+st.title("🍱 FoodScan AI")
+st.write("Upload a food image to detect food and estimate calories")
+
+# -----------------------------
+# LOAD GOOGLE VISION SECRET
+# -----------------------------
+try:
+    key_dict = dict(st.secrets["GOOGLE_VISION_KEY"])
+    credentials = service_account.Credentials.from_service_account_info(key_dict)
+    client = vision.ImageAnnotatorClient(credentials=credentials)
+except Exception as e:
+    st.error("Google Vision API key not loaded properly")
     st.stop()
 
-key_dict = json.loads(st.secrets["GOOGLE_VISION_KEY"])
+# -----------------------------
+# LOAD FOOD DATABASE
+# -----------------------------
+try:
+    df = pd.read_csv("food.csv")
+except:
+    st.error("food.csv not found")
+    st.stop()
 
-credentials = service_account.Credentials.from_service_account_info(key_dict)
+food_list = df["food"].str.lower().tolist()
 
-client = vision.ImageAnnotatorClient(credentials=credentials)
-
-client = vision.ImageAnnotatorClient()
-
-# ---------- LOAD DATA ----------
-df = pd.read_csv("三高FoodScan Dataset/food_data.csv")
-food_list = df["ingredient"].str.lower().tolist()
-
-# ---------- FILTER ----------
-ignore_labels = [
-    "food","ingredient","dish","cuisine",
-    "tableware","produce","plant","meal","recipe"
+# -----------------------------
+# PRIORITY MATCH FUNCTION
+# -----------------------------
+priority_keywords = [
+    "rice",
+    "noodle",
+    "chicken",
+    "beef",
+    "pork",
+    "egg",
+    "fish",
+    "salmon",
+    "shrimp",
+    "pizza",
+    "burger",
+    "pasta",
+    "cake",
+    "bread",
+    "sushi",
+    "ramen",
+    "steak"
 ]
 
-# ---------- MAPPING ----------
-mapping_dict = {
-    "spinach": "vegetable",
-    "leaf vegetable": "vegetable",
-    "greens": "vegetable",
-    "cruciferous vegetables": "vegetable",
-    "bok choy": "vegetable",
-    "cabbage": "vegetable",
-    "lettuce": "vegetable",
-    "broccoli": "vegetable",
+def priority_match(labels):
 
-    "mandu": "dumpling",
-    "momo": "dumpling",
-    "gyoza": "dumpling",
-
-    "ramen": "noodle",
-    "spaghetti": "noodle",
-    "udon": "noodle",
-
-    "latte": "coffee",
-    "cappuccino": "coffee",
-
-    "yam": "sweet potato",
-    "shumai": "siu mai"
-}
-
-# ---------- MATCH ----------
-def find_best_match(labels):
-
-    labels = [l.lower() for l in labels]
-
-    mapped_labels = []
+    detected = []
 
     for label in labels:
+        text = label.description.lower()
 
-        if label in ignore_labels:
-            continue
-
-        if label in mapping_dict:
-            mapped_labels.append(mapping_dict[label])
-        else:
-            mapped_labels.append(label)
-
-    # ---------- PRIORITY SCORE ----------
-    priority_scores = {
-
-        # protein
-        "fish":5,
-        "chicken":5,
-        "beef":5,
-        "pork":5,
-        "duck":5,
-        "shrimp":5,
-        "egg":5,
-        "tofu":5,
-        "salmon":5,
-        "crab":5,
-
-        # carb
-        "rice":4,
-        "noodle":4,
-        "dumpling":4,
-        "bread":4,
-        "bun":4,
-        "pasta":4,
-        "pizza":4,
-        "burger":4,
-        "congee":4,
-
-        # dish
-        "fried rice":3,
-        "wonton noodle":3,
-        "char siu rice":3,
-        "curry chicken":3,
-
-        # vegetable
-        "vegetable":2,
-        "broccoli":2,
-        "spinach":2,
-        "cabbage":2,
-        "lettuce":2,
-        "bok choy":2
-    }
-
-    best_food = None
-    best_score = 0
-
-    for label in mapped_labels:
-
-        # exact match
-        if label in food_list:
-
-            score = priority_scores.get(label, 3)
-
-            if score > best_score:
-                best_score = score
-                best_food = label
-
-        # partial match
         for food in food_list:
+            if food in text:
+                detected.append(food)
 
-            if label in food or food in label:
+        for keyword in priority_keywords:
+            if keyword in text:
+                detected.append(keyword)
 
-                score = priority_scores.get(food, 3)
+    detected = list(set(detected))
 
-                if score > best_score:
-                    best_score = score
-                    best_food = food
+    return detected[:5]
 
-    return best_food
-
-# ---------- RISK CALC ----------
-def calculate_risk(dm, chol, bp):
-
-    avg = (dm + chol + bp) / 3
-
-    if avg <= 1:
-        return "Low Risk 🟢"
-    elif avg <= 2:
-        return "Moderate Risk 🟡"
-    else:
-        return "High Risk 🔴"
-
-# ---------- UI ----------
-st.title("🍱 三高 FoodScan AI")
-st.write("Upload a food image to analyze diabetes, cholesterol and blood pressure risk.")
-
-uploaded_file = st.file_uploader("Upload food image", type=["jpg","png","jpeg"])
+# -----------------------------
+# IMAGE UPLOAD
+# -----------------------------
+uploaded_file = st.file_uploader("Upload food image", type=["jpg","jpeg","png"])
 
 if uploaded_file:
 
-    st.image(uploaded_file, caption="Uploaded Food", use_column_width=True)
+    st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
 
     content = uploaded_file.read()
-
     image = vision.Image(content=content)
 
-    response = client.label_detection(image=image)
+    with st.spinner("Scanning food..."):
 
-    labels = [label.description for label in response.label_annotations]
+        response = client.label_detection(image=image)
+        labels = response.label_annotations
 
-    filtered_labels = [l for l in labels if l.lower() not in ignore_labels]
+    if not labels:
+        st.warning("No food detected")
+        st.stop()
 
-    matched_food = find_best_match(filtered_labels)
+    # -----------------------------
+    # MATCH FOOD
+    # -----------------------------
+    detected_food = priority_match(labels)
 
-    if matched_food:
+    if not detected_food:
+        st.warning("Food not found in database")
+        st.write("Detected labels:")
 
-        result = df[df["ingredient"].str.lower() == matched_food]
+        for label in labels[:5]:
+            st.write(label.description)
 
-        if not result.empty:
+        st.stop()
 
-            dm = int(result.iloc[0]["dm_score"])
-            chol = int(result.iloc[0]["chol_score"])
-            bp = int(result.iloc[0]["bp_score"])
-            category = result.iloc[0]["category"]
-            notes = result.iloc[0]["notes"]
+    # -----------------------------
+    # SHOW RESULT
+    # -----------------------------
+    st.success("Food detected")
 
-            risk = calculate_risk(dm, chol, bp)
+    results = df[df["food"].str.lower().isin(detected_food)]
 
-            st.success(f"Detected Food: {matched_food}")
+    for _, row in results.iterrows():
 
-            st.subheader(risk)
+        st.subheader(row["food"])
 
-            col1, col2, col3 = st.columns(3)
+        st.write("Calories:", row["calories"])
+        st.write("Protein:", row["protein"])
+        st.write("Carbs:", row["carbs"])
+        st.write("Fat:", row["fat"])
 
-            col1.metric("DM Risk", dm)
-            col2.metric("Cholesterol Risk", chol)
-            col3.metric("Blood Pressure Risk", bp)
-
-            st.write("### Category")
-            st.write(category)
-
-            st.write("### Notes")
-            st.write(notes)
-
-    else:
-
-        st.error("Food not recognized. Try another image.")
+        st.divider()
