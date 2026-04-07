@@ -4,7 +4,14 @@ from google.cloud import vision
 import os
 
 # ---------- GOOGLE VISION ----------
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = r"C:\Users\USER\Desktop\三高FoodScan\google-vision-key.json"
+import json
+from google.oauth2 import service_account
+
+key_dict = json.loads(st.secrets["GOOGLE_VISION_KEY"])
+
+credentials = service_account.Credentials.from_service_account_info(key_dict)
+
+client = vision.ImageAnnotatorClient(credentials=credentials)
 
 client = vision.ImageAnnotatorClient()
 
