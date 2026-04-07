@@ -1,0 +1,133 @@
+ingredient,dm_score,chol_score,bp_score,category,notes
+rice,3,0,0,carb,high glycemic
+fried rice,3,2,2,carb,oily salty
+congee,2,0,1,carb,soft high glycemic
+noodle,3,1,1,carb,refined carb
+ramen,3,2,3,carb,high sodium
+udon,3,1,2,carb,high sodium
+spaghetti,3,1,1,carb,refined carb
+macaroni,3,1,1,carb,refined carb
+instant noodle,3,2,3,carb,very high sodium
+rice noodle,3,0,1,carb,high glycemic
+ho fun,3,1,2,carb,oily
+vermicelli,3,0,1,carb,high glycemic
+dumpling,2,2,2,carb,sodium
+bao,2,1,1,carb,refined carb
+steamed bun,2,1,1,carb,refined carb
+bbq pork bun,3,2,2,carb,fat sugar
+bread,3,1,1,carb,refined carb
+toast,3,1,1,carb,refined carb
+sandwich,3,2,2,processed,sodium
+pizza,3,3,3,processed,fat sodium
+burger,3,3,3,processed,cholesterol
+pasta,3,1,1,carb,refined carb
+chicken,0,1,1,protein,lean protein
+fried chicken,1,3,3,protein,oil sodium
+roast chicken,0,2,2,protein,fat sodium
+duck,0,3,2,protein,high fat
+roast duck,0,3,3,protein,fat sodium
+pork,0,3,2,protein,saturated fat
+roasted pork,0,3,3,protein,fat sodium
+pork belly,0,3,2,protein,high fat
+bbq pork,1,3,3,protein,fat sugar sodium
+char siu,1,3,3,protein,fat sugar
+beef,0,2,1,protein,iron fat
+steak,0,3,1,protein,fat
+beef brisket,0,3,2,protein,fat
+fish,0,1,0,protein,healthy protein
+salmon,0,2,0,protein,omega 3
+tilapia,0,1,0,protein,lean
+shrimp,0,2,1,protein,cholesterol
+prawn,0,2,1,protein,cholesterol
+crab,0,2,1,protein,cholesterol
+egg,0,3,0,protein,cholesterol
+fried egg,0,3,1,protein,fat
+boiled egg,0,3,0,protein,cholesterol
+tofu,0,0,0,protein,healthy
+fried tofu,0,2,2,protein,oily
+silken tofu,0,0,0,protein,healthy
+soybean,1,0,0,protein,fiber protein
+sweet and sour pork,2,3,3,protein,sugar fat
+kung pao chicken,1,3,3,protein,oily
+mapo tofu,1,3,3,protein,spicy salty
+tomato egg,1,2,1,protein,oil
+fried vegetables,1,1,2,vegetable,oily
+stir fry vegetable,1,1,2,vegetable,oily
+bok choy,0,0,0,vegetable,fiber
+chinese cabbage,0,0,0,vegetable,fiber
+spinach,0,0,0,vegetable,fiber
+broccoli,0,0,0,vegetable,fiber
+lettuce,0,0,0,vegetable,fiber
+carrot,1,0,0,vegetable,fiber
+potato,3,0,0,carb,starch
+sweet potato,2,0,0,carb,fiber
+eggplant,1,0,0,vegetable,fiber
+mushroom,0,0,0,vegetable,fiber
+corn,3,0,0,carb,starch
+cucumber,0,0,0,vegetable,fiber
+soup,0,1,2,soup,sodium
+chicken soup,0,2,2,soup,fat sodium
+fish soup,0,1,2,soup,sodium
+hotpot,1,3,3,protein,sodium
+steamboat,1,3,3,protein,sodium
+curry,2,3,3,protein,fat sodium
+curry chicken,2,3,3,protein,fat sodium
+curry beef,2,3,3,protein,fat sodium
+water,0,0,0,drink,healthy
+tea,0,0,0,drink,healthy
+green tea,0,0,0,drink,healthy
+black tea,0,0,0,drink,healthy
+milk tea,3,2,2,drink,sugar fat
+bubble tea,3,2,2,drink,sugar
+coffee,0,0,0,drink,low calorie
+latte,1,1,0,drink,milk
+cappuccino,1,1,0,drink,milk
+soy milk,1,0,0,drink,plant protein
+milk,1,2,0,drink,fat
+juice,3,0,0,drink,sugar
+orange juice,3,0,0,drink,sugar
+lemon tea,2,0,0,drink,sugar
+soft drink,3,0,0,drink,sugar
+cola,3,0,0,drink,sugar
+coke,3,0,0,drink,sugar
+sprite,3,0,0,drink,sugar
+energy drink,3,0,0,drink,sugar
+apple,2,0,0,fruit,natural sugar
+banana,2,0,0,fruit,natural sugar
+orange,2,0,0,fruit,natural sugar
+pear,2,0,0,fruit,natural sugar
+watermelon,2,0,0,fruit,natural sugar
+melon,2,0,0,fruit,natural sugar
+grape,2,0,0,fruit,natural sugar
+mango,3,0,0,fruit,sugar
+pineapple,2,0,0,fruit,sugar
+strawberry,1,0,0,fruit,fiber
+kiwi,1,0,0,fruit,fiber
+dragon fruit,1,0,0,fruit,fiber
+papaya,2,0,0,fruit,sugar
+peach,2,0,0,fruit,sugar
+plum,2,0,0,fruit,sugar
+french fries,3,3,3,snack,oil salt
+chips,3,3,3,snack,sodium
+cake,3,3,1,snack,sugar fat
+chocolate,3,3,0,snack,sugar fat
+ice cream,3,3,0,snack,sugar fat
+cookie,3,2,1,snack,sugar
+biscuit,3,2,1,snack,sugar
+donut,3,3,1,snack,sugar fat
+waffle,3,2,1,snack,sugar
+pancake,3,2,1,snack,sugar
+spring roll,2,3,3,snack,oily
+egg tart,3,3,1,snack,fat sugar
+moon cake,3,3,1,snack,sugar fat
+siu mai,2,2,2,snack,sodium
+fish ball,2,2,3,snack,sodium
+cheung fun,3,1,2,carb,sauce sodium
+turnip cake,3,2,2,carb,oily
+pineapple bun,3,2,1,carb,sugar
+egg waffle,3,2,1,snack,sugar
+cart noodle,3,2,3,carb,sodium
+satay beef noodle,3,3,3,carb,sodium
+wonton noodle,3,2,3,carb,sodium
+wonton,2,2,2,carb,sodium
+dim sum,2,2,2,snack,sodium
