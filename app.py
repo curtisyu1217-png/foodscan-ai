@@ -1,11 +1,12 @@
 import streamlit as st
-import pandas as pd
-from google.cloud import vision
-import os
-
-# ---------- GOOGLE VISION ----------
 import json
+from google.cloud import vision
 from google.oauth2 import service_account
+
+# ---------- GOOGLE VISION SETUP ----------
+if "GOOGLE_VISION_KEY" not in st.secrets:
+    st.error("Google Vision key not found. Please add GOOGLE_VISION_KEY in Streamlit Secrets.")
+    st.stop()
 
 key_dict = json.loads(st.secrets["GOOGLE_VISION_KEY"])
 
