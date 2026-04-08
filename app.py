@@ -17,8 +17,8 @@ try:
     key_dict = json.loads(st.secrets["GOOGLE_VISION_KEY"])
     credentials = service_account.Credentials.from_service_account_info(key_dict)
     client = vision.ImageAnnotatorClient(credentials=credentials)
-except:
-    st.error("Google Vision API key not loaded properly")
+except Exception as e:
+    st.error(f"Google Vision API key not loaded properly: {e}")
     st.stop()
 
 # =============================
