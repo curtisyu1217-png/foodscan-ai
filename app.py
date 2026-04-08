@@ -1,83 +1,57 @@
 import streamlit as st
+import pandas as pd
+import json
 from google.cloud import vision
 from google.oauth2 import service_account
-import pandas as pd
 
-# -----------------------------
-# PAGE CONFIG
-# -----------------------------
-st.set_page_config(page_title="FoodScan AI", page_icon="🍱")
+st.set_page_config(page_title="FoodScan AI", layout="centered")
+
 st.title("🍱 FoodScan AI")
-st.write("Upload a food image to detect food and estimate calories")
+st.write("Upload a food photo to detect health risk")
 
-# -----------------------------
-# LOAD GOOGLE VISION SECRET
-# -----------------------------
+# =============================
+# Load Google Vision API
+# =============================
+
 try:
-    key_dict = dict(st.secrets["GOOGLE_VISION_KEY"])
+    key_dict = json.loads(st.secrets["GOOGLE_VISION_KEY"])
     credentials = service_account.Credentials.from_service_account_info(key_dict)
     client = vision.ImageAnnotatorClient(credentials=credentials)
-except Exception as e:
+except:
     st.error("Google Vision API key not loaded properly")
     st.stop()
 
-# -----------------------------
-# LOAD FOOD DATABASE
-# -----------------------------
+# =============================
+# Load CSV
+# =============================
+
 try:
     df = pd.read_csv("food.csv")
 except:
     st.error("food.csv not found")
     st.stop()
 
-food_list = df["food"].str.lower().tolist()
+df.columns = df.columns.str.lower()
 
-# -----------------------------
-# PRIORITY MATCH FUNCTION
-# -----------------------------
-priority_keywords = [
-    "rice",
-    "noodle",
-    "chicken",
-    "beef",
-    "pork",
-    "egg",
-    "fish",
-    "salmon",
-    "shrimp",
-    "pizza",
-    "burger",
-    "pasta",
-    "cake",
-    "bread",
-    "sushi",
-    "ramen",
-    "steak"
+required_columns = [
+    "ingredient",
+    "dm_score",
+    "chol_score",
+    "bp_score",
+    "category",
+    "notes"
 ]
 
-def priority_match(labels):
+for col in required_columns:
+    if col not in df.columns:
+        st.error(f"Missing column: {col}")
+        st.stop()
 
-    detected = []
+# =============================
+# Upload image
+# =============================
 
-    for label in labels:
-        text = label.description.lower()
-
-        for food in food_list:
-            if food in text:
-                detected.append(food)
-
-        for keyword in priority_keywords:
-            if keyword in text:
-                detected.append(keyword)
-
-    detected = list(set(detected))
-
-    return detected[:5]
-
-# -----------------------------
-# IMAGE UPLOAD
-# -----------------------------
-uploaded_file = st.file_uploader("Upload food image", type=["jpg","jpeg","png"])
+uploaded_file = st.file_uploader("Upload food image", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
 
@@ -86,43 +60,39 @@ if uploaded_file:
     content = uploaded_file.read()
     image = vision.Image(content=content)
 
-    with st.spinner("Scanning food..."):
+    response = client.label_detection(image=image)
+    labels = [label.description.lower() for label in response.label_annotations]
 
-        response = client.label_detection(image=image)
-        labels = response.label_annotations
+    st.write("Detected labels:", labels)
 
-    if not labels:
-        st.warning("No food detected")
-        st.stop()
+    # =============================
+    # Match ingredient
+    # =============================
 
-    # -----------------------------
-    # MATCH FOOD
-    # -----------------------------
-    detected_food = priority_match(labels)
+    match_row = None
+    detected_food = None
 
-    if not detected_food:
-        st.warning("Food not found in database")
-        st.write("Detected labels:")
+    for label in labels:
+        match = df[df["ingredient"].str.contains(label, case=False, na=False)]
+        if not match.empty:
+            match_row = match.iloc[0]
+            detected_food = label
+            break
 
-        for label in labels[:5]:
-            st.write(label.description)
+    if match_row is not None:
 
-        st.stop()
+        st.success(f"Detected Food: {detected_food}")
 
-    # -----------------------------
-    # SHOW RESULT
-    # -----------------------------
-    st.success("Food detected")
+        st.markdown("---")
 
-    results = df[df["food"].str.lower().isin(detected_food)]
+        st.subheader("Health Risk")
 
-    for _, row in results.iterrows():
+        st.write("DM Score:", match_row["dm_score"])
+        st.write("Chol Score:", match_row["chol_score"])
+        st.write("BP Score:", match_row["bp_score"])
 
-        st.subheader(row["food"])
+        st.warning(match_row["category"])
+        st.info(match_row["notes"])
 
-        st.write("Calories:", row["calories"])
-        st.write("Protein:", row["protein"])
-        st.write("Carbs:", row["carbs"])
-        st.write("Fat:", row["fat"])
-
-        st.divider()
+    else:
+        st.error("Food not found in database")
