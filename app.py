@@ -19,8 +19,10 @@ try:
             "https://www.googleapis.com/auth/spreadsheets"
         ]
     )
+
     vision_client = vision.ImageAnnotatorClient(credentials=credentials)
     sheets_service = build("sheets", "v4", credentials=credentials)
+
 except Exception as e:
     st.error(f"API not loaded properly: {e}")
     st.stop()
@@ -74,12 +76,12 @@ def log_scan(condition, detected_food, risk_level, food_found, confident):
             body={"values": row}
         ).execute()
 
-    except Exception:
+    except:
         pass
 
 
 # =============================
-# Traffic light helper (FIXED)
+# Traffic light (clean output)
 # =============================
 def traffic_light(label, score, category):
 
@@ -89,46 +91,18 @@ def traffic_light(label, score, category):
         score = 0
 
     if score == 0:
-        color = "#2ecc71"
         emoji = "🟢"
         risk = "Low Risk"
 
     elif score == 1:
-        color = "#f39c12"
         emoji = "🟡"
         risk = "Moderate Risk"
 
-    else:  # score 2 or 3
-        color = "#e74c3c"
+    else:
         emoji = "🔴"
         risk = "High Risk"
 
-    st.markdown(
-        f"""
-        <div style="
-            background-color: {color}22;
-            border-left: 5px solid {color};
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin: 8px 0;
-        ">
-            <span style="font-size: 20px;">{emoji}</span>
-            <strong style="font-size: 16px; margin-left: 8px;">
-                {label}
-            </strong>
-
-            <span style="
-                float: right;
-                font-size: 14px;
-                color: {color};
-                font-weight: bold;
-            ">
-                {risk} (Score: {score})
-            </span>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    st.write(f"{emoji} {label}: {risk} (Score: {score})")
 
     return risk
 
@@ -167,8 +141,7 @@ def show_dashboard():
         st.markdown("---")
 
         st.subheader("Condition Breakdown")
-        condition_counts = log_df["condition"].value_counts()
-        st.bar_chart(condition_counts)
+        st.bar_chart(log_df["condition"].value_counts())
 
         st.subheader("Top Detected Foods")
         food_counts = log_df[
@@ -178,8 +151,7 @@ def show_dashboard():
         st.bar_chart(food_counts)
 
         st.subheader("Risk Level Breakdown")
-        risk_counts = log_df["risk_level"].value_counts()
-        st.bar_chart(risk_counts)
+        st.bar_chart(log_df["risk_level"].value_counts())
 
         st.subheader("Recent Scans")
         st.dataframe(
@@ -192,7 +164,7 @@ def show_dashboard():
         csv = log_df.to_csv(index=False)
 
         st.download_button(
-            label="⬇️ Download Full Log as CSV",
+            label="Download Full Log",
             data=csv,
             file_name="foodscan_logs.csv",
             mime="text/csv"
@@ -203,17 +175,17 @@ def show_dashboard():
 
 
 # =============================
-# Page routing
+# Navigation
 # =============================
 page = st.sidebar.radio(
     "Navigation",
-    ["🍱 Food Scanner", "📊 Admin Dashboard"]
+    ["Food Scanner", "Admin Dashboard"]
 )
 
 # =============================
 # Dashboard
 # =============================
-if page == "📊 Admin Dashboard":
+if page == "Admin Dashboard":
     show_dashboard()
 
 # =============================
@@ -221,15 +193,13 @@ if page == "📊 Admin Dashboard":
 # =============================
 else:
 
-    st.title("🍱 FoodScan AI")
+    st.title("FoodScan AI")
     st.write("Upload a food photo to detect health risk")
 
     st.markdown("---")
 
-    st.subheader("Your Condition")
-
     condition = st.radio(
-        "Select your condition to see relevant risk:",
+        "Select your condition:",
         [
             "All",
             "Diabetes (DM)",
@@ -250,19 +220,12 @@ else:
 
     if uploaded_file:
 
-        st.image(
-            uploaded_file,
-            caption="Uploaded Image",
-            use_column_width=True
-        )
+        st.image(uploaded_file)
 
         content = uploaded_file.read()
-
         image = vision.Image(content=content)
 
-        response = vision_client.label_detection(
-            image=image
-        )
+        response = vision_client.label_detection(image=image)
 
         confident_labels = [
             l for l in response.label_annotations
@@ -280,18 +243,8 @@ else:
         ]
 
         if not labels and low_conf_labels:
-            st.warning(
-                "Image not clear enough to detect food confidently. Please try a clearer photo."
-            )
-
-            log_scan(
-                condition,
-                "unclear image",
-                "unknown",
-                False,
-                False
-            )
-
+            st.warning("Image not clear enough. Try a clearer photo.")
+            log_scan(condition, "unclear image", "unknown", False, False)
             st.stop()
 
         match_row = None
@@ -314,14 +267,13 @@ else:
 
         if match_row is not None:
 
-            st.success(
-                f"✅ Detected Food: **{detected_food.title()}**"
-            )
+            st.success(f"Detected Food: {detected_food.title()}")
 
             st.markdown("---")
             st.subheader("Health Risk Assessment")
-            st.caption(match_row["notes"])
-            st.markdown(" ")
+
+            st.write(match_row["notes"])
+            st.write("")
 
             risk_shown = []
 
@@ -391,10 +343,7 @@ else:
 
         else:
 
-            st.error(
-                "❌ Food not found in database. Try a clearer photo or a different angle."
-            )
-
+            st.error("Food not found in database.")
             st.write("Detected labels:", labels)
 
             log_scan(
