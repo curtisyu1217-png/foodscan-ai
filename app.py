@@ -233,3 +233,20 @@ else:
             st.error("❌ Food not found in database. Try a clearer photo or a different angle.")
             st.write("Detected labels:", labels)
             log_scan(condition, ", ".join(labels[:3]) if labels else "none", "not found", False, True)
+
+# =============================
+# Page routing
+# =============================
+page = st.sidebar.radio("Navigation", ["🍱 Food Scanner", "📊 Admin Dashboard"])
+
+if page == "📊 Admin Dashboard":
+    password = st.sidebar.text_input("Enter admin password", type="password")
+    if password == "hauyan1017":
+        show_dashboard()
+    elif password == "":
+        st.info("Enter the admin password in the sidebar to view the dashboard.")
+    else:
+        st.error("Incorrect password.")
+
+else:
+    # ... rest of your food scanner code stays exactly the same
