@@ -38,7 +38,16 @@ except:
     st.stop()
 
 df.columns = df.columns.str.lower()
-required_columns = ["ingredient", "dm_score", "chol_score", "bp_score", "category", "notes"]
+
+required_columns = [
+    "ingredient",
+    "dm_score",
+    "chol_score",
+    "bp_score",
+    "category",
+    "notes"
+]
+
 for col in required_columns:
     if col not in df.columns:
         st.error(f"Missing column: {col}")
@@ -57,32 +66,42 @@ def log_scan(condition, detected_food, risk_level, food_found, confident):
             "Yes" if food_found else "No",
             "Yes" if confident else "No"
         ]]
+
         sheets_service.spreadsheets().values().append(
             spreadsheetId=SHEET_ID,
             range=f"{SHEET_NAME}!A1",
             valueInputOption="RAW",
             body={"values": row}
         ).execute()
-    except Exception as e:
+
+    except Exception:
         pass
 
+
 # =============================
-# Traffic light helper
+# Traffic light helper (FIXED)
 # =============================
 def traffic_light(label, score, category):
-    category_lower = str(category).lower()
-    if "low" in category_lower:
+
+    try:
+        score = int(score)
+    except:
+        score = 0
+
+    if score == 0:
         color = "#2ecc71"
         emoji = "🟢"
         risk = "Low Risk"
-    elif "high" in category_lower:
-        color = "#e74c3c"
-        emoji = "🔴"
-        risk = "High Risk"
-    else:
+
+    elif score == 1:
         color = "#f39c12"
         emoji = "🟡"
         risk = "Moderate Risk"
+
+    else:  # score 2 or 3
+        color = "#e74c3c"
+        emoji = "🔴"
+        risk = "High Risk"
 
     st.markdown(
         f"""
@@ -94,18 +113,31 @@ def traffic_light(label, score, category):
             margin: 8px 0;
         ">
             <span style="font-size: 20px;">{emoji}</span>
-            <strong style="font-size: 16px; margin-left: 8px;">{label}</strong>
-            <span style="float: right; font-size: 14px; color: {color}; font-weight: bold;">{risk} (Score: {score})</span>
+            <strong style="font-size: 16px; margin-left: 8px;">
+                {label}
+            </strong>
+
+            <span style="
+                float: right;
+                font-size: 14px;
+                color: {color};
+                font-weight: bold;
+            ">
+                {risk} (Score: {score})
+            </span>
         </div>
         """,
         unsafe_allow_html=True
     )
+
     return risk
+
 
 # =============================
 # Admin dashboard
 # =============================
 def show_dashboard():
+
     st.title("📊 Admin Dashboard")
 
     try:
@@ -113,6 +145,7 @@ def show_dashboard():
             spreadsheetId=SHEET_ID,
             range=f"{SHEET_NAME}!A1:F1000"
         ).execute()
+
         values = result.get("values", [])
 
         if len(values) <= 1:
@@ -126,6 +159,7 @@ def show_dashboard():
         not_found = (log_df["food_found"] == "No").sum()
 
         col1, col2, col3 = st.columns(3)
+
         col1.metric("Total Scans", total_scans)
         col2.metric("Food Detected", found_rate)
         col3.metric("Not Found", not_found)
@@ -137,7 +171,10 @@ def show_dashboard():
         st.bar_chart(condition_counts)
 
         st.subheader("Top Detected Foods")
-        food_counts = log_df[log_df["food_found"] == "Yes"]["detected_food"].value_counts().head(10)
+        food_counts = log_df[
+            log_df["food_found"] == "Yes"
+        ]["detected_food"].value_counts().head(10)
+
         st.bar_chart(food_counts)
 
         st.subheader("Risk Level Breakdown")
@@ -145,10 +182,15 @@ def show_dashboard():
         st.bar_chart(risk_counts)
 
         st.subheader("Recent Scans")
-        st.dataframe(log_df.tail(20).iloc[::-1], use_container_width=True)
+        st.dataframe(
+            log_df.tail(20).iloc[::-1],
+            use_container_width=True
+        )
 
         st.markdown("---")
+
         csv = log_df.to_csv(index=False)
+
         st.download_button(
             label="⬇️ Download Full Log as CSV",
             data=csv,
@@ -159,78 +201,206 @@ def show_dashboard():
     except Exception as e:
         st.error(f"Could not load dashboard: {e}")
 
+
 # =============================
 # Page routing
 # =============================
-page = st.sidebar.radio("Navigation", ["🍱 Food Scanner", "📊 Admin Dashboard"])
+page = st.sidebar.radio(
+    "Navigation",
+    ["🍱 Food Scanner", "📊 Admin Dashboard"]
+)
 
+# =============================
+# Dashboard
+# =============================
 if page == "📊 Admin Dashboard":
     show_dashboard()
 
+# =============================
+# Scanner
+# =============================
 else:
+
     st.title("🍱 FoodScan AI")
     st.write("Upload a food photo to detect health risk")
 
     st.markdown("---")
+
     st.subheader("Your Condition")
+
     condition = st.radio(
         "Select your condition to see relevant risk:",
-        ["All", "Diabetes (DM)", "High Cholesterol", "High Blood Pressure (BP)"],
+        [
+            "All",
+            "Diabetes (DM)",
+            "High Cholesterol",
+            "High Blood Pressure (BP)"
+        ],
         horizontal=True
     )
 
     CONFIDENCE_THRESHOLD = 0.7
 
     st.markdown("---")
-    uploaded_file = st.file_uploader("Upload food image", type=["jpg", "jpeg", "png"])
+
+    uploaded_file = st.file_uploader(
+        "Upload food image",
+        type=["jpg", "jpeg", "png"]
+    )
 
     if uploaded_file:
-        st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
-        content = uploaded_file.read()
-        image = vision.Image(content=content)
-        response = vision_client.label_detection(image=image)
 
-        confident_labels = [l for l in response.label_annotations if l.score >= CONFIDENCE_THRESHOLD]
-        low_conf_labels = [l for l in response.label_annotations if l.score < CONFIDENCE_THRESHOLD]
-        labels = [l.description.lower() for l in confident_labels]
+        st.image(
+            uploaded_file,
+            caption="Uploaded Image",
+            use_column_width=True
+        )
+
+        content = uploaded_file.read()
+
+        image = vision.Image(content=content)
+
+        response = vision_client.label_detection(
+            image=image
+        )
+
+        confident_labels = [
+            l for l in response.label_annotations
+            if l.score >= CONFIDENCE_THRESHOLD
+        ]
+
+        low_conf_labels = [
+            l for l in response.label_annotations
+            if l.score < CONFIDENCE_THRESHOLD
+        ]
+
+        labels = [
+            l.description.lower()
+            for l in confident_labels
+        ]
 
         if not labels and low_conf_labels:
-            st.warning("Image not clear enough to detect food confidently. Please try a clearer photo.")
-            log_scan(condition, "unclear image", "unknown", False, False)
+            st.warning(
+                "Image not clear enough to detect food confidently. Please try a clearer photo."
+            )
+
+            log_scan(
+                condition,
+                "unclear image",
+                "unknown",
+                False,
+                False
+            )
+
             st.stop()
 
         match_row = None
         detected_food = None
+
         for label in labels:
-            match = df[df["ingredient"].str.contains(label, case=False, na=False)]
+
+            match = df[
+                df["ingredient"].str.contains(
+                    label,
+                    case=False,
+                    na=False
+                )
+            ]
+
             if not match.empty:
                 match_row = match.iloc[0]
                 detected_food = label
                 break
 
         if match_row is not None:
-            st.success(f"✅ Detected Food: **{detected_food.title()}**")
+
+            st.success(
+                f"✅ Detected Food: **{detected_food.title()}**"
+            )
+
             st.markdown("---")
             st.subheader("Health Risk Assessment")
             st.caption(match_row["notes"])
             st.markdown(" ")
 
             risk_shown = []
-            if condition == "All":
-                risk_shown.append(traffic_light("Diabetes (DM)", match_row["dm_score"], match_row["category"]))
-                risk_shown.append(traffic_light("Cholesterol", match_row["chol_score"], match_row["category"]))
-                risk_shown.append(traffic_light("Blood Pressure (BP)", match_row["bp_score"], match_row["category"]))
-            elif condition == "Diabetes (DM)":
-                risk_shown.append(traffic_light("Diabetes (DM)", match_row["dm_score"], match_row["category"]))
-            elif condition == "High Cholesterol":
-                risk_shown.append(traffic_light("Cholesterol", match_row["chol_score"], match_row["category"]))
-            elif condition == "High Blood Pressure (BP)":
-                risk_shown.append(traffic_light("Blood Pressure (BP)", match_row["bp_score"], match_row["category"]))
 
-            log_scan(condition, detected_food, ", ".join(risk_shown), True, True)
+            if condition == "All":
+
+                risk_shown.append(
+                    traffic_light(
+                        "Diabetes (DM)",
+                        match_row["dm_score"],
+                        match_row["category"]
+                    )
+                )
+
+                risk_shown.append(
+                    traffic_light(
+                        "Cholesterol",
+                        match_row["chol_score"],
+                        match_row["category"]
+                    )
+                )
+
+                risk_shown.append(
+                    traffic_light(
+                        "Blood Pressure (BP)",
+                        match_row["bp_score"],
+                        match_row["category"]
+                    )
+                )
+
+            elif condition == "Diabetes (DM)":
+
+                risk_shown.append(
+                    traffic_light(
+                        "Diabetes (DM)",
+                        match_row["dm_score"],
+                        match_row["category"]
+                    )
+                )
+
+            elif condition == "High Cholesterol":
+
+                risk_shown.append(
+                    traffic_light(
+                        "Cholesterol",
+                        match_row["chol_score"],
+                        match_row["category"]
+                    )
+                )
+
+            elif condition == "High Blood Pressure (BP)":
+
+                risk_shown.append(
+                    traffic_light(
+                        "Blood Pressure (BP)",
+                        match_row["bp_score"],
+                        match_row["category"]
+                    )
+                )
+
+            log_scan(
+                condition,
+                detected_food,
+                ", ".join(risk_shown),
+                True,
+                True
+            )
 
         else:
-            st.error("❌ Food not found in database. Try a clearer photo or a different angle.")
-            st.write("Detected labels:", labels)
-            log_scan(condition, ", ".join(labels[:3]) if labels else "none", "not found", False, True)
 
+            st.error(
+                "❌ Food not found in database. Try a clearer photo or a different angle."
+            )
+
+            st.write("Detected labels:", labels)
+
+            log_scan(
+                condition,
+                ", ".join(labels[:3]) if labels else "none",
+                "not found",
+                False,
+                True
+            )
