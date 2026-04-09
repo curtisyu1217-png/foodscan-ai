@@ -2,3 +2,4 @@ streamlit
 pandas
 google-cloud-vision
 google-auth
+google-api-python-client
