@@ -35,17 +35,80 @@ for col in required_columns:
         st.stop()
 
 # =============================
+# Condition selection
+# =============================
+st.markdown("---")
+st.subheader("Your Condition")
+condition = st.radio(
+    "Select your condition to see relevant risk:",
+    ["All", "Diabetes (DM)", "High Cholesterol", "High Blood Pressure (BP)"],
+    horizontal=True
+)
+
+# =============================
+# Traffic light helper
+# =============================
+def traffic_light(label, score, category):
+    category_lower = str(category).lower()
+    if "low" in category_lower:
+        color = "#2ecc71"
+        emoji = "🟢"
+        risk = "Low Risk"
+    elif "high" in category_lower:
+        color = "#e74c3c"
+        emoji = "🔴"
+        risk = "High Risk"
+    else:
+        color = "#f39c12"
+        emoji = "🟡"
+        risk = "Moderate Risk"
+
+    st.markdown(
+        f"""
+        <div style="
+            background-color: {color}22;
+            border-left: 5px solid {color};
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 8px 0;
+        ">
+            <span style="font-size: 20px;">{emoji}</span>
+            <strong style="font-size: 16px; margin-left: 8px;">{label}</strong>
+            <span style="float: right; font-size: 14px; color: {color}; font-weight: bold;">{risk} (Score: {score})</span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+# =============================
+# Confidence threshold
+# =============================
+CONFIDENCE_THRESHOLD = 0.7
+
+# =============================
 # Upload image
 # =============================
+st.markdown("---")
 uploaded_file = st.file_uploader("Upload food image", type=["jpg", "jpeg", "png"])
+
 if uploaded_file:
     st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
     content = uploaded_file.read()
     image = vision.Image(content=content)
     response = client.label_detection(image=image)
-    labels = [label.description.lower() for label in response.label_annotations]
-    st.write("Detected labels:", labels)
 
+    # Filter by confidence threshold
+    labels = [
+        label.description.lower()
+        for label in response.label_annotations
+        if label.score >= CONFIDENCE_THRESHOLD
+    ]
+
+    if not labels:
+        st.warning("Image not clear enough to detect food. Please try a clearer photo.")
+        st.stop()
+
+    # Match ingredient
     match_row = None
     detected_food = None
     for label in labels:
@@ -56,13 +119,24 @@ if uploaded_file:
             break
 
     if match_row is not None:
-        st.success(f"Detected Food: {detected_food}")
+        st.success(f"✅ Detected Food: **{detected_food.title()}**")
         st.markdown("---")
-        st.subheader("Health Risk")
-        st.write("DM Score:", match_row["dm_score"])
-        st.write("Chol Score:", match_row["chol_score"])
-        st.write("BP Score:", match_row["bp_score"])
-        st.warning(match_row["category"])
-        st.info(match_row["notes"])
+        st.subheader("Health Risk Assessment")
+        st.caption(match_row["notes"])
+        st.markdown(" ")
+
+        # Show relevant scores based on condition
+        if condition == "All":
+            traffic_light("Diabetes (DM)", match_row["dm_score"], match_row["category"])
+            traffic_light("Cholesterol", match_row["chol_score"], match_row["category"])
+            traffic_light("Blood Pressure (BP)", match_row["bp_score"], match_row["category"])
+        elif condition == "Diabetes (DM)":
+            traffic_light("Diabetes (DM)", match_row["dm_score"], match_row["category"])
+        elif condition == "High Cholesterol":
+            traffic_light("Cholesterol", match_row["chol_score"], match_row["category"])
+        elif condition == "High Blood Pressure (BP)":
+            traffic_light("Blood Pressure (BP)", match_row["bp_score"], match_row["category"])
+
     else:
-        st.error("Food not found in database")
+        st.error("❌ Food not found in database. Try a clearer photo or a different angle.")
+        st.write("Detected labels:", labels)
