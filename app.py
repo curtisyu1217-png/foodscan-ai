@@ -21,6 +21,7 @@ LANG = {
         "detected": "Detected Food",
         "risk_title": "Health Risk Assessment",
         "low": "Low Risk",
+        "low_mod": "Low-Moderate Risk",
         "moderate": "Moderate Risk",
         "high": "High Risk",
         "score": "Score",
@@ -60,6 +61,7 @@ LANG = {
         "detected": "識別食物",
         "risk_title": "健康風險評估",
         "low": "低風險",
+        "low_mod": "輕度風險",
         "moderate": "中等風險",
         "high": "高風險",
         "score": "分數",
@@ -160,7 +162,7 @@ def log_scan(condition, detected_food, risk_level, food_found, confident):
         pass
 
 # =============================
-# Traffic light
+# Traffic light (0-3 scale)
 # =============================
 def traffic_light(label, score):
     try:
@@ -168,11 +170,15 @@ def traffic_light(label, score):
     except:
         score = 0
 
-    if score <= 3:
+    if score == 0:
         color = "#2ecc71"
         emoji = "🟢"
         risk = t("low")
-    elif score <= 6:
+    elif score == 1:
+        color = "#90EE90"
+        emoji = "🟢"
+        risk = t("low_mod")
+    elif score == 2:
         color = "#f39c12"
         emoji = "🟡"
         risk = t("moderate")
